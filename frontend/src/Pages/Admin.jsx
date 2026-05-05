@@ -26,7 +26,7 @@ const [tabActiva, setTabActiva] = useState('Productos')
 
   if (loading) return <p>Cargando...</p>
   if (!session) return null
-
+console.log("Hola")
   return (
     <div style={{ padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
