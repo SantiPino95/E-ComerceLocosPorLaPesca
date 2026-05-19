@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../Lib/supabase'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import React from 'react'
+
 
 function Ventas() {
   const [pedidos, setPedidos] = useState([])
@@ -10,23 +12,34 @@ function Ventas() {
   const [filtroEstado, setFiltroEstado] = useState('todos')
   const [filtroPeriodo, setFiltroPeriodo] = useState('todo')
 
+  
+  const obtenerPedidos = async () => {
+    const { data, error } = await supabase
+    .from('pedidos')
+    .select('*, detalle_pedido(*, productos(nombre))')
+    .order('created_at', { ascending: false })
+    if (!error) setPedidos(data)
+      setCargando(false)
+  }
   useEffect(() => {
     obtenerPedidos()
   }, [])
+  
+  const confirmarCliente = (pedido) => {
+  const mensaje = `Hola ${pedido.nombre_cliente}! 🎣 Tu pedido #${pedido.id} fue confirmado. Pronto nos contactamos para coordinar la entrega. Gracias por elegirnos!`
+  const url = `https://wa.me/${pedido.telefono_cliente}?text=${encodeURIComponent(mensaje)}`
+  window.open(url)
+}
 
-  const obtenerPedidos = async () => {
-    const { data, error } = await supabase
-      .from('pedidos')
-      .select('*, detalle_pedido(*, productos(nombre))')
-      .order('created_at', { ascending: false })
-    if (!error) setPedidos(data)
-    setCargando(false)
+const cambiarEstado = async (id, estado, pedido) => {
+  await supabase.from('pedidos').update({ estado }).eq('id', id)
+  
+  if (estado === 'confirmado') {
+    confirmarCliente(pedido)
   }
-
-  const cambiarEstado = async (id, estado) => {
-    await supabase.from('pedidos').update({ estado }).eq('id', id)
-    obtenerPedidos()
-  }
+  
+  obtenerPedidos()
+}
 
   const filtrarPorPeriodo = (pedido) => {
     const fecha = new Date(pedido.created_at)
@@ -122,6 +135,7 @@ function Ventas() {
           style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}>
           <option value="todos">Todos los estados</option>
           <option value="pendiente">Pendiente</option>
+          <option value="pendiente">Confirmado</option>
           <option value="entregado">Entregado</option>
           <option value="cancelado">Cancelado</option>
         </select>
@@ -151,20 +165,22 @@ function Ventas() {
             </thead>
             <tbody>
               {pedidosFiltrados.map(p => (
-                <>
-                  <tr key={p.id} style={{ borderBottom: '1px solid #eee' }}>
+                 
+                <React.Fragment key={p.id}>
+                  <tr  style={{ borderBottom: '1px solid #eee' }}>
                     <td style={{ padding: '8px' }}>{p.id}</td>
                     <td style={{ padding: '8px' }}>{p.nombre_cliente}</td>
                     <td style={{ padding: '8px' }}>{p.telefono_cliente}</td>
                     <td style={{ padding: '8px' }}>${p.total}</td>
                     <td style={{ padding: '8px' }}>
-                      <select value={p.estado} onChange={e => cambiarEstado(p.id, e.target.value)}
+                      <select value={p.estado} onChange={e => cambiarEstado(p.id, e.target.value, p)}
                         style={{
                           padding: '4px 8px', borderRadius: '4px', border: '1px solid #ccc',
-                          background: p.estado === 'entregado' ? '#2a9d8f' : p.estado === 'cancelado' ? '#e63946' : '#f4a261',
+                          background: p.estado === 'entregado' ? '#2a9d8f' : p.estado === 'cancelado' ? '#e63946' : p.estado === 'pendiente' ? '#f4a261' : '#4307ce',
                           color: 'white', cursor: 'pointer'
                         }}>
                         <option value="pendiente">Pendiente</option>
+                        <option value="confirmado">Confirmado</option>
                         <option value="entregado">Entregado</option>
                         <option value="cancelado">Cancelado</option>
                       </select>
@@ -193,7 +209,8 @@ function Ventas() {
                       </td>
                     </tr>
                   )}
-                </>
+                
+                </React.Fragment>
               ))}
             </tbody>
           </table>
