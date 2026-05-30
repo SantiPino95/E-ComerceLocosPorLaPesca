@@ -1,9 +1,19 @@
 import { useState } from 'react'
 import ProductoModal from './ProductoModal'
+import { useCliente } from '../Context/ClienteContext'
 
-function ProductoCard({ producto, onAgregar }) {
+function ProductoCard({ producto, onAgregar, onLoginRequerido }) {
   const [hover, setHover] = useState(false)
   const [modalAbierto, setModalAbierto] = useState(false)
+  const { cliente } = useCliente()
+
+  const handleAgregar = async () => {
+    if (!cliente) {
+         onLoginRequerido()
+      return
+    }
+    await onAgregar(producto)
+  }
 
   return (
     <>
@@ -19,11 +29,8 @@ function ProductoCard({ producto, onAgregar }) {
           background: 'white'
         }}
       >
-        {/* Imagen clickeable */}
-        <div
-          onClick={() => setModalAbierto(true)}
-          style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
-        >
+        <div onClick={() => setModalAbierto(true)}
+          style={{ position: 'relative', overflow: 'hidden', cursor: 'pointer' }}>
           {producto.imagen_url
             ? <img src={producto.imagen_url} alt={producto.nombre}
                 style={{
@@ -59,7 +66,6 @@ function ProductoCard({ producto, onAgregar }) {
           )}
         </div>
 
-        {/* Contenido */}
         <div style={{ padding: '14px' }}>
           <span style={{
             background: '#e8f4fd', color: '#0077b6',
@@ -68,10 +74,8 @@ function ProductoCard({ producto, onAgregar }) {
           }}>
             {producto.categoria}
           </span>
-          <h4
-            onClick={() => setModalAbierto(true)}
-            style={{ margin: '8px 0 4px 0', fontSize: '15px', color: '#1a1a2e', cursor: 'pointer' }}
-          >
+          <h4 onClick={() => setModalAbierto(true)}
+            style={{ margin: '8px 0 4px 0', fontSize: '15px', color: '#1a1a2e', cursor: 'pointer' }}>
             {producto.nombre}
           </h4>
           <p style={{
@@ -89,7 +93,7 @@ function ProductoCard({ producto, onAgregar }) {
             </span>
           </div>
           <button
-            onClick={() => producto.stock > 0 && onAgregar(producto)}
+            onClick={handleAgregar}
             disabled={producto.stock === 0}
             style={{
               background: producto.stock === 0 ? '#ddd' : hover ? '#005f99' : '#0077b6',
@@ -109,7 +113,7 @@ function ProductoCard({ producto, onAgregar }) {
         <ProductoModal
           producto={producto}
           onCerrar={() => setModalAbierto(false)}
-          onAgregar={onAgregar}
+          onAgregar={handleAgregar}
         />
       )}
     </>

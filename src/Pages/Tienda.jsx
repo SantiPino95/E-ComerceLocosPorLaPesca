@@ -3,15 +3,16 @@ import { supabase } from '../Lib/supabase';
 import { useCarrito } from '../Context/CarritoContext';
 import Carrito from '../Components/Carrito';
 import Header from '../Components/Header';
-import ProductoCard from "../Components/ProductoCard";
+import ProductoCard from '../Components/ProductoCard';
+import LoginCliente from '../Pages/LoginCliente';
 
 const CATEGORIAS = ['Todos', 'Cañas', 'Anzuelos', 'Materiales', 'Camping', 'Ropa', 'General']
 
 function Tienda() {
   const [productos, setProductos] = useState([])
-  const [cargando, setCargando] = useState(false)
   const [busqueda, setBusqueda] = useState('')
   const [categoriaActiva, setCategoriaActiva] = useState('Todos')
+  const [mostrarLogin, setMostrarLogin] = useState(false)
   const { agregarAlCarrito, pedidoConfirmado } = useCarrito()
 
   useEffect(() => {
@@ -20,18 +21,12 @@ function Tienda() {
 
   const obtenerProductos = async () => {
     const { data, error } = await supabase.from('productos').select('*').eq('activo', true)
-    if (error) {
-      console.error('Error:', error)
-    } else {
-      setProductos(data)
-    }
+    if (!error) setProductos(data)
   }
 
   const productosFiltrados = productos
     .filter(p => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
     .filter(p => categoriaActiva === 'Todos' || p.categoria?.toLowerCase() === categoriaActiva.toLowerCase())
-
-  if (cargando) return <p>Cargando productos...</p>
 
   return (
     <div>
@@ -46,8 +41,7 @@ function Tienda() {
         }}>
           <h4 style={{ marginTop: 0 }}>Categorías</h4>
           {CATEGORIAS.map(cat => (
-            <div key={cat}
-              onClick={() => setCategoriaActiva(cat)}
+            <div key={cat} onClick={() => setCategoriaActiva(cat)}
               style={{
                 padding: '10px 12px', marginBottom: '6px',
                 borderRadius: '6px', cursor: 'pointer',
@@ -67,17 +61,20 @@ function Tienda() {
           ) : (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
               {productosFiltrados.map(producto => (
-  <ProductoCard
-    key={producto.id}
-    producto={producto}
-    onAgregar={agregarAlCarrito}
-  />
-))}
+                <ProductoCard
+                  key={producto.id}
+                  producto={producto}
+                  onAgregar={agregarAlCarrito}
+                  onLoginRequerido={() => setMostrarLogin(true)}
+                />
+              ))}
             </div>
           )}
         </div>
       </div>
+
       <Carrito />
+      {mostrarLogin && <LoginCliente onCerrar={() => setMostrarLogin(false)} />}
     </div>
   )
 }
